@@ -144,6 +144,43 @@ public class PersonPageTests
         var salaryAfterSubmission = double.Parse(salaryLabel.Text);
         salaryAfterSubmission.Should().BeApproximately(expectedSalary, 0.001);
     }
+
+    [Test]
+    public void Person_SalaryIncrease_BelowMinusTen_ShouldDisplayValidationMessages()
+    {
+        // Arrange
+        driver.Navigate().GoToUrl(BaseURL);
+        driver.FindElement(By.XPath("//*[@data-test='PersonPageNavigation']")).Click();
+
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
+        var salaryInputSelector = By.XPath("//*[@data-test='SalaryIncreasePercentageInput']");
+        wait.Until(d =>
+        {
+            try
+            {
+                var input = d.FindElement(salaryInputSelector);
+                input.Clear();
+                input.SendKeys("-11");
+                return true;
+            }
+            catch (StaleElementReferenceException)
+            {
+                return false;
+            }
+        });
+
+        // Act
+        var submitButton = wait.Until(ExpectedConditions.ElementExists(By.XPath("//*[@data-test='SalaryIncreaseSubmitButton']")));
+        submitButton.Click();
+
+        // Assert
+        var topValidationMessage = wait.Until(ExpectedConditions.ElementExists(By.CssSelector("ul.validation-errors li.validation-message")));
+        topValidationMessage.Text.Should().Be("The specified percentag should be between -10 and infinity.");
+
+        var fieldValidationMessage = wait.Until(ExpectedConditions.ElementExists(By.XPath("//*[@data-test='SalaryIncreasePercentageInput']/following-sibling::div[contains(@class, 'validation-message')]")));
+        fieldValidationMessage.Text.Should().Be("The specified percentag should be between -10 and infinity.");
+    }
+
     private bool IsElementPresent(By by)
     {
         try
